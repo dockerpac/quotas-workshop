@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: terminating
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  replicas: 3
+  template:
+     metadata:
+       labels:
+         app: my-app
+     spec:
+       containers:
+       - name: my-app
+         image: dockerpac/docker-demo:1
+         lifecycle:
+           preStop:
+             exec:
+               command: ["/bin/sh","-c","sleep 30"]
+         env:
+         - name: VERSION
+           value: "1"
+         resources:
+           limits: 
+             cpu: "100m"
+             memory: "800Mi"
+           requests:
+             cpu: "10m"
+             memory: "800Mi"

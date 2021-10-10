@@ -24,8 +24,8 @@ kubectl get events --sort-by='.lastTimestamp' | tail -1
 Warning  FailedCreate  46s (x8 over 6m11s)  replicaset-controller  (combined from similar events): Error creating: pods "my-app-f5d98dc86-97l27" is forbidden: [minimum memory usage per Pod is 100Mi.  No request is specified, minimum cpu usage per Pod is 10m.  No request is specified, maximum cpu usage per Pod is 2.  No limit is specified, maximum memory usage per Pod is 8Gi.  No limit is specified, cpu max limit to request ratio per Pod is 10, but no request is specified or request is 0, memory max limit to request ratio per Pod is 1, but no request is specified or request is 0]
 ```
 
-
 Now update the Deployment and add correct Request and Limits :
+
 ```yaml
   resources:
     limits: 
@@ -35,7 +35,6 @@ Now update the Deployment and add correct Request and Limits :
       cpu: "20m"
       memory: "600Mi"
 ```
-
 
 ```sh
 kubectl apply -f 2-quota.yaml
@@ -77,9 +76,21 @@ If you want to set a CPU limit of 200m, you must set at least a CPU request of 2
 - Example 2  
 If you want to set a CPU limit of 1vCPU (1000m), you must set at least a CPU request of 100m
 
+Review the current range enforced in your Namespace :
+
+```sh
+kubectl describe limitrange
+
+Namespace:  default
+Type        Resource  Min    Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---    ---  ---------------  -------------  -----------------------
+Pod         cpu       10m    2    -                -              10
+Pod         memory    100Mi  8Gi  -                -              1
+```
+
 ```sh
 # Cleanup
-kubectl apply -f 3-wrongquotacpu.yaml
+kubectl delete -f 3-wrongquotacpu.yaml
 ```
 
 
@@ -135,7 +146,26 @@ kubectl get events --sort-by='.lastTimestamp' | tail -1
 37s         Warning   FailedCreate        replicaset/out-of-quota-7f568f8c78   (combined from similar events): Error creating: pods "out-of-quota-7f568f8c78-c6cgt" is forbidden: exceeded quota: quota, requested: limits.memory=800Mi,requests.memory=800Mi, used: limits.memory=2400Mi,requests.memory=2400Mi, limited: limits.memory=3Gi,requests.memory=3Gi
 ```
 
-The quota of the Namespace has been exceeded.
+Check that the quota of the Namespace has been exceeded.
+
+```sh
+TODO : review display
+kubectl describe resourcequota
+
+Name:                   quota
+Namespace:              default
+Resource                Used    Hard
+--------                ----    ----
+limits.cpu              300m    20
+limits.memory           2400Mi  64Gi
+persistentvolumeclaims  0       100
+pods                    3       250
+requests.cpu            30m     10
+requests.memory         2400Mi  64Gi
+services.loadbalancers  0       0
+services.nodeports      0       5
+```
+
 Try to lower your Memory Request and Limit.
 
 ```sh
@@ -151,8 +181,15 @@ out-of-quota-6d9c8b764-rv5gq   1/1     Running   0          10s
 kubectl delete -f 5-fillquota.yaml -f 7-outofquota-reviewed.yaml
 ```
 
+# What happens when the Limit is reached for my container ?
+
+## CPU : throttling
+
+## MEMORY : OutOfMemoryKill
+
 
 # Pending Pods
+# View current usage in cluster
 
 
 # Appli impactée par une autre ?
@@ -160,5 +197,11 @@ kubectl delete -f 5-fillquota.yaml -f 7-outofquota-reviewed.yaml
 
 
 # pending pod
-# out of memory oom
-# throttling cpu
+
+# Quota pendant rolling update
+# Terminating --> quota ?
+
+
+# How to check your quotas ?
+# Sysdig
+# kube-capacity
