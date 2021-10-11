@@ -215,28 +215,23 @@ out-of-quota-6d9c8b764-rv5gq   1/1     Running   0          10s
 kubectl delete -f 5-fillquota.yaml -f 7-outofquota-reviewed.yaml
 ```
 
+## What happens when the Limit is reached for my container ?
 
-# What happens when the Limit is reached for my container ?
+### CPU : throttling
 
-## CPU : throttling
+### MEMORY : OutOfMemoryKill
 
-## MEMORY : OutOfMemoryKill
+## Pending Pods
+Show current usage in cluster
 
-
-# Pending Pods
-# View current usage in cluster
-
-
-# Appli impactée par une autre ?
-# Impact de la request
+## Appli impactée par une autre ?
+Impact de la request
 
 
-# pending pod
-
-# Quota pendant rolling update
-# Terminating --> quota ?
+## Quota pendant rolling update
+Terminating --> quota ?
 
 
-# How to check your quotas ?
-# Sysdig
-# kube-capacity
+## How to check your quotas ?
+- Sysdig
+- kube-capacity
