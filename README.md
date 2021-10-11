@@ -1,4 +1,38 @@
-# Deployment without Request / Limit
+# Kubernetes resource quotas workshop
+
+## Check current Quotas
+
+First let's check the quotas currently enforced in your Namespace
+
+```sh
+# ResourceQuota
+kubectl describe resourcequota
+
+Name:                   quota
+Namespace:              default
+Resource                Used  Hard
+--------                ----  ----
+limits.cpu              0     20
+limits.memory           0     3Gi
+persistentvolumeclaims  0     100
+pods                    0     250
+requests.cpu            0     10
+requests.memory         0     3Gi
+services.loadbalancers  0     0
+services.nodeports      0     5
+
+# LimitRange
+kubectl describe limitrange
+
+Name:       limitrange
+Namespace:  default
+Type        Resource  Min    Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---    ---  ---------------  -------------  -----------------------
+Pod         cpu       10m    2    -                -              10
+Pod         memory    100Mi  8Gi  -                -              1
+```
+
+## Deployment without Request / Limit
 
 Create a Deployment without any Resource.
 
@@ -51,10 +85,9 @@ my-app-85b999b8c6-tt7wb   1/1     Running   0          25s
 kubectl delete -f 2-quota.yaml
 ```
 
+## Deployment with wrong CPU Quota
 
-# Deployment with wrong CPU Quota
-
-Deploy an application that sets Request / Limits that doesn't respect the LimitRange
+Deploy an application that sets Request / Limits that doesn't respect the Cpu LimitRange Ratio
 
 ```sh
 kubectl apply -f 3-wrongquotacpu.yaml
@@ -70,13 +103,14 @@ kubectl get events --sort-by='.lastTimestamp' | tail -1
 3s          Warning   FailedCreate              replicaset/my-app-6fb6f4d6f6                      (combined from similar events): Error creating: pods "my-app-6fb6f4d6f6-hm6jx" is forbidden: cpu max limit to request ratio per Pod is 10, but provided ratio is 20.000000
 ```
 
-The Ratio between Limits and Requests for CPU must be < 10 (ie : \<container cpu limit\> / \<container cpu request\> < 10)  
+> :warning: The Ratio between Limits and Requests for CPU must be < 10 (ie : \<container cpu limit\> / \<container cpu request\> < 10)  
+
 - Example 1  
 If you want to set a CPU limit of 200m, you must set at least a CPU request of 20m
 - Example 2  
 If you want to set a CPU limit of 1vCPU (1000m), you must set at least a CPU request of 100m
 
-Review the current range enforced in your Namespace :
+Review the current range enforced in your Namespace. Limit/Request Ratio for CPU is 10.
 
 ```sh
 kubectl describe limitrange
@@ -93,10 +127,9 @@ Pod         memory    100Mi  8Gi  -                -              1
 kubectl delete -f 3-wrongquotacpu.yaml
 ```
 
+## Deployment with wrong MEMORY Quota
 
-# Deployment with wrong MEMORY Quota
-
-Deploy an application that sets Request / Limits that doesn't respect the LimitRange
+Deploy an application that sets Request / Limits that doesn't respect the Memory LimitRange Ratio
 
 ```sh
 kubectl apply -f 4-wrongquotamemory.yaml
@@ -112,7 +145,8 @@ kubectl get events --sort-by='.lastTimestamp' | tail -1
 3s          Warning   FailedCreate              replicaset/my-app-686cbfc57                       (combined from similar events): Error creating: pods "my-app-686cbfc57-ww7wb" is forbidden: memory max limit to request ratio per Pod is 1, but provided ratio is 6.000000
 ```
 
-The Ratio between Limits and Requests for Memory must be = 1 (ie : \<container memory limit\> = \<container memory request\>)  
+> :warning: The Ratio between Limits and Requests for Memory must be = 1 (ie : \<container memory limit\> = \<container memory request\>)  
+
 - Example  
 If you want to set a Memory Limit of 1Gi, you must set a Memory Request of 1Gi
 
@@ -121,16 +155,16 @@ If you want to set a Memory Limit of 1Gi, you must set a Memory Request of 1Gi
 kubectl delete -f 4-wrongquotamemory.yaml
 ```
 
-# Deployment when Quota of Namespace is full
+## Deployment when Quota of Namespace is full
 
-First let's fill the Namespace quota with a dummy application
+First let's fill 80% of the Namespace quota with a dummy application
 
 ```sh
 kubectl apply -f 5-fillquota.yaml
 deployment.apps/fill-quota created
 ```
 
-Now deploy your application
+Now deploy your application with 2 replicas
 
 ```sh
 kubectl apply -f 6-outofquota.yaml
@@ -180,6 +214,7 @@ out-of-quota-6d9c8b764-rv5gq   1/1     Running   0          10s
 # Cleanup
 kubectl delete -f 5-fillquota.yaml -f 7-outofquota-reviewed.yaml
 ```
+
 
 # What happens when the Limit is reached for my container ?
 
