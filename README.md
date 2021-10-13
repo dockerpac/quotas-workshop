@@ -13,11 +13,11 @@ Namespace:              default
 Resource                Used  Hard
 --------                ----  ----
 limits.cpu              0     20
-limits.memory           0     3Gi
+limits.memory           0     25Gi
 persistentvolumeclaims  0     100
 pods                    0     250
 requests.cpu            0     10
-requests.memory         0     3Gi
+requests.memory         0     25Gi
 services.loadbalancers  0     0
 services.nodeports      0     5
 
@@ -211,18 +211,55 @@ kubectl get pods | grep out-of-quota
 out-of-quota-6d9c8b764-n9qjz   1/1     Running   0          6s
 out-of-quota-6d9c8b764-rv5gq   1/1     Running   0          10s
 
+```
+
+### Check current usage
+
+Check current usage of Pods previously created
+
+```sh
+kubectl top pods
+
 # Cleanup
 kubectl delete -f 5-fillquota.yaml -f 7-outofquota-reviewed.yaml
 ```
+
+## Pending Pods
+
+Now let's see what happens if I oversize my Requests
+
+```sh
+kubectl apply -f 8-pending.yaml
+
+# --> All Pods are now created
+kubectl get pods | grep pending
+
+pending-75964cf7bd-9pvt9       0/1     Pending   0          4s
+pending-75964cf7bd-sns6s       0/1     Pending   0          4s
+
+# Check events
+kubectl get events --sort-by='.lastTimestamp' | grep available | tail -1
+
+63s         Warning   FailedScheduling    pod/pending-75964cf7bd-9pvt9              0/3 nodes are available: 1 node(s) had taint {node-role.kubernetes.io/master: }, that the pod didn't tolerate, 2 Insufficient cpu.
+```
+
+Kubernetes can't find a node to schedule Pods with the Requests configured
+
+```sh
+# Cleanup
+kubectl delete -f 8-pending.yaml
+
+```
+
 
 ## What happens when the Limit is reached for my container ?
 
 ### CPU : throttling
 
+Deploy a Pod that is stressing CPU
+
 ### MEMORY : OutOfMemoryKill
 
-## Pending Pods
-Show current usage in cluster
 
 ## Appli impactée par une autre ?
 Impact de la request
